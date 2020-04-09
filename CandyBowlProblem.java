@@ -24,14 +24,17 @@ import javax.swing.SwingConstants;
 import javax.swing.text.StyledDocument;
 
 
+/* Bowl class to keep the tract of Bowl. This class has current number of candy
+   and maximum number of candy it has */
 class Bowl {
     private int mCandy, maxCandy;
 
     public Bowl(int maxCandy) {
         this.maxCandy = maxCandy;
-        mCandy = maxCandy;
+        mCandy = maxCandy; // currecnt candy is max candy when the bowl is filled initially
     }
 
+    // synchronized method to accedd the Bowl by only on faculty at a time
     public synchronized boolean getStatus() {
         if (mCandy > 0) {
             mCandy--;
@@ -43,27 +46,47 @@ class Bowl {
         }
     }
 
+    // method to get the current number of candy in a bowl
     public int getCandy() {
       return mCandy;
     }
 
+    // method to re-fill the bowl
     public void Fill() {
         mCandy = maxCandy;
     }
 }
 
-class Professor extends Thread {
+/* TA class to keep the tract of TA. This class has the bowl to be filled by TA when it is empty */
+class TA {
+    private Bowl bowl;
+
+    public TA(Bowl bowl) {
+        this.bowl = bowl; // initial status of the bowl
+    }
+
+    // method to fill the bowl by TA
+    public void fillBowl() {
+        bowl.Fill();
+    }
+}
+
+
+/* Faculty class to keep the tract of activities of Faculties. This class has current number of candy
+   in a bowl, TA, faculty names, faculty wait time etc */
+class Faculty extends Thread {
     private Bowl bowl;
     private TA ta;
     private String name;
     private Random random = new Random();
     private int mCandy, sleepTime;
-    static int maxSleepTime;
     private boolean status;
 
-    static StyledDocument doc = CandyBowlProblem.pane.getStyledDocument();
-    static SimpleAttributeSet keyWord = new SimpleAttributeSet();
-    public Professor(Bowl bowl, TA ta, int maxSleepTime, String name) {
+    static private int maxSleepTime;
+    static private StyledDocument doc = CandyBowlProblem.pane.getStyledDocument();
+    static private SimpleAttributeSet keyWord = new SimpleAttributeSet();
+
+    public Faculty(Bowl bowl, TA ta, int maxSleepTime, String name) {
         this.bowl = bowl;
         this.ta = ta;
         this.maxSleepTime = maxSleepTime;
@@ -79,6 +102,7 @@ class Professor extends Thread {
 
                 status = bowl.getStatus();
                 int candy = bowl.getCandy();
+
                 if (status == false) { // Bow is empty so TA needs it to be filled
                     ta.fillBowl();
                     printInfo("\nTA filled the bowl. Now the bowl has " + candy + " candy in it.\n");
@@ -86,12 +110,12 @@ class Professor extends Thread {
                 } else {
                     mCandy++;
                     do {
-                      sleepTime = random.nextInt(maxSleepTime);
+                      sleepTime = random.nextInt(maxSleepTime); // generate random time bounded by maxSleepTime
                     } while (sleepTime == 0);
 
                     printInfo(name + " is thinking and eating a candy for " + sleepTime + " ms. Now Bowl has " + candy + " candy left.");
                     System.out.println(name + " thinking and eating a candy for " + sleepTime + " ms. Now Bowl has " + candy + " candy left.");
-                    Thread.sleep(sleepTime);
+                    Thread.sleep(sleepTime); //wait till sleepTime
 
                 }
             }
@@ -103,10 +127,12 @@ class Professor extends Thread {
         }
     }
 
+    // method to set the sleep time at run time
     public void setSleepTime(int sleeptime) {
         this.maxSleepTime = sleeptime;
     }
 
+    // method to print the information on GUI
     static public void printInfo (String info) {
         int len = CandyBowlProblem.pane.getDocument().getLength();
         CandyBowlProblem.pane.setCaretPosition(len);
@@ -119,73 +145,59 @@ class Professor extends Thread {
     }
 }
 
-
-class TA {
-    private Bowl bowl;
-
-    public TA(Bowl bowl) {
-        this.bowl = bowl;
-    }
-
-    public void fillBowl() {
-        bowl.Fill();
-    }
-}
-
-
+// main class CandyBowlProblem
 public class CandyBowlProblem extends JPanel {
-    private static Scanner input = new Scanner(System.in);
-    static int nProf = 3, mCandy = 5, maxSleepTime = 3000, runTime = 0;
-    static Bowl bowl = new Bowl(mCandy);
+
     static private int height = 640, width = 1080;
-    static TA ta = new TA(bowl);
+    static private int nProf = 3, mCandy = 5, maxSleepTime = 3000, runTime = 0;
 
-    static Professor[] profs = new Professor[nProf];
-    static JTextPane pane = new JTextPane();
-    static JButton btnPlay = new JButton("Play");
+    static private Scanner input = new Scanner(System.in);
 
-    static JButton btnStop = new JButton("Stop");
+    static private Bowl bowl = new Bowl(mCandy);
+    static private TA ta = new TA(bowl);
+    static private Faculty[] profs = new Faculty[nProf];
 
-    static JButton btnPlusSpeed = new JButton("Speed+");
+    static JTextPane pane = new JTextPane(); // this is global to this package
+    static private JButton btnPlay = new JButton("Play");
+    static private JButton btnStop = new JButton("Stop");
+    static private JButton btnPlusSpeed = new JButton("Speed+");
+    static private JButton btnMinusSpeed = new JButton("Speed-");
 
-    static JButton btnMinusSpeed = new JButton("Speed-");
+    static public void playGUI() {
 
-    static public void display() {
-        
         JFrame frame = new JFrame("Candy Bowl Problem");
 
         // btnPlay.setBounds(130,60,140,40);
         // btnStop.setBounds(130,140,140,40);
         // btnPlusSpeed.setBounds(130,220,140,40);
         // btnMinusSpeed.setBounds(130,300,140,40);
+
         btnPlay.setEnabled(true);
         btnStop.setEnabled(false);
         btnPlusSpeed.setEnabled(false);
         btnMinusSpeed.setEnabled(false);
+
         JLabel lfac = new JLabel("No of Faculties        ");
-        // lfac.setLocation(200,200);
         JTextField nfac = new JTextField("3",6);
-
         JLabel lcandy = new JLabel("No of Candies        ");
-        // lcandy.setLocation(100,200);
         JTextField ncandy = new JTextField("5",6);
-
         JLabel lwaittime = new JLabel("Max wait time (ms)");
-        // lwaittime.setLocation(200,200);
         JTextField waittime = new JTextField("3000",6);
-
         JLabel lmaxtime = new JLabel("Max run time (ms)");
         JTextField maxtime= new JTextField("0",6);
+
+        // lfac.setLocation(200,200);
+        // lcandy.setLocation(100,200);
+        // lwaittime.setLocation(200,200);
         // lmaxtime.setLocation(200,200);
 
-        pane.setEditable(false);
         SimpleAttributeSet attributeSet = new SimpleAttributeSet();
         StyleConstants.setItalic(attributeSet, true);
         StyleConstants.setForeground(attributeSet, Color.WHITE);
         pane.setCharacterAttributes(attributeSet, false);
+        pane.setEditable(false);
 
         JScrollPane scrollPane = new JScrollPane(pane);
-
         pane.setPreferredSize(new Dimension(width - 100, 500));
         JPanel p1 = new JPanel();
         JPanel p2 = new JPanel();
@@ -199,7 +211,6 @@ public class CandyBowlProblem extends JPanel {
         pane.setForeground(Color.WHITE);
 
         p1.add(scrollableTextArea);
-
         p2.add(lfac);
         p2.add(nfac);
         p2.add(lcandy);
@@ -225,12 +236,16 @@ public class CandyBowlProblem extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent arg0) {
+
                 if (nfac.getText().length() > 0)
                     nProf = Integer.parseInt(nfac.getText());
+
                 if (ncandy.getText().length() > 0)
                     mCandy = Integer.parseInt(ncandy.getText());
+
                 if (waittime.getText().length() > 0)
                     maxSleepTime = Integer.parseInt(waittime.getText());
+
                 if (maxtime.getText().length() > 0)
                     runTime = Integer.parseInt(maxtime.getText());
 
@@ -239,16 +254,19 @@ public class CandyBowlProblem extends JPanel {
                 TA ta = new TA(bowl);
 
                 String name;
-                profs = new Professor[nProf];
+
+                profs = new Faculty[nProf];
+
                 for (int i = 0; i < nProf; i++) {
-                    name = "Professor_" + (i+1);
-                    profs[i] = new Professor(bowl, ta, maxSleepTime, name);
+                    name = "Faculty_" + (i+1);
+                    profs[i] = new Faculty(bowl, ta, maxSleepTime, name);
                 }
 
                 btnPlay.setEnabled(false);
                 btnPlusSpeed.setEnabled(true);
                 btnMinusSpeed.setEnabled(true);
                 btnStop.setEnabled(true);
+
                 pane.setText("ACTIVITIES:");
 
                 try {
@@ -256,57 +274,68 @@ public class CandyBowlProblem extends JPanel {
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
+
                 play(profs, runTime);
+
             }
         });
+
         btnStop.addActionListener(new ActionListener() {
+
             @Override
             public void actionPerformed(ActionEvent arg0) {
+
                 System.out.println("Stopped!");
-                Professor.printInfo("Stopped!");
+                Faculty.printInfo("Stopped!");
+
                 for (int i = 0; i < profs.length; i++) {
                     profs[i].interrupt();
                 }
+
                 btnPlay.setEnabled(true);
                 btnStop.setEnabled(false);
                 btnPlusSpeed.setEnabled(false);
                 btnMinusSpeed.setEnabled(false);
+
             }
         });
+
         btnPlusSpeed.addActionListener(new ActionListener() {
+
             @Override
             public void actionPerformed(ActionEvent arg0) {
                 int sleeptime = 0;
 
                 if (waittime.getText().length() > 0) {
                     sleeptime = Integer.parseInt(waittime.getText());
-                    sleeptime = (int)(sleeptime * 0.9);
+                    sleeptime = (int)(sleeptime * 0.9); // decrease wait time by 10%
                     waittime.setText(Integer.toString(sleeptime));
                     profs[0].setSleepTime(sleeptime);
                 }
+
             }
         });
+
         btnMinusSpeed.addActionListener(new ActionListener() {
+
             @Override
             public void actionPerformed(ActionEvent arg0) {
                 int sleeptime = 0;
 
                 if (waittime.getText().length() > 0) {
                     sleeptime = Integer.parseInt(waittime.getText());
-                    sleeptime = (int)(sleeptime * 1.1);
+                    sleeptime = (int)(sleeptime * 1.1); // increase wait time by 10%
                     waittime.setText(Integer.toString(sleeptime));
                     profs[0].setSleepTime(sleeptime);
                 }
+
             }
         });
 
     }
 
-    public static void main(String[] args) {
-        display();
-    }
+    private static void play(Faculty [] profs, int runTime) {
 
-    private static void play(Professor [] profs, int runTime) {
         for (int i = 0; i < profs.length; i++) {
             profs[i].start();
         }
@@ -316,7 +345,7 @@ public class CandyBowlProblem extends JPanel {
             try {
                 Thread.sleep(runTime);
                 System.out.println(runTime + " ms time is up!");
-                Professor.printInfo(runTime + " ms time is up!");
+                Faculty.printInfo(runTime + " ms time is up!");
                 for (int i = 0; i < profs.length; i++) {
                     profs[i].interrupt();
                 }
@@ -331,20 +360,20 @@ public class CandyBowlProblem extends JPanel {
 
     }
 
-    private static void takeInput() {
-        int nProf = 3, mCandy = 5, maxSleepTime = 3, runTime = 5;
-        // int nProf, mCandy, maxSleepTime, runTime;
+    private static void playCLI() {
+        // int nProf = 3, mCandy = 5, maxSleepTime = 3, runTime = 5;
+        int nProf, mCandy, maxSleepTime, runTime;
 
-        // System.out.print("Enter number of faculty: ");
-        // nProf = input.nextInt();
-        // System.out.print("Enter Number of Candy: ");
-        // mCandy = input.nextInt();
+        System.out.print("Enter number of faculty: ");
+        nProf = input.nextInt();
+        System.out.print("Enter Number of Candy: ");
+        mCandy = input.nextInt();
 
-        // System.out.print("Enter max sleep time in ms: ");
-        // maxSleepTime = input.nextInt();
+        System.out.print("Enter max sleep time in ms: ");
+        maxSleepTime = input.nextInt();
 
-        // System.out.print("Enter total run-time is ms: ");
-        // runTime = input.nextInt();
+        System.out.print("Enter total run-time is ms: ");
+        runTime = input.nextInt();
 
         System.out.print("\n\n");
 
@@ -353,10 +382,10 @@ public class CandyBowlProblem extends JPanel {
         TA ta = new TA(bowl);
 
         String name;
-        Professor[] profs = new Professor[nProf];
+        Faculty[] profs = new Faculty[nProf];
         for (int i = 0; i < nProf; i++) {
-            name = "Professor_" + (i+1);
-            profs[i] = new Professor(bowl, ta, maxSleepTime, name);
+            name = "Faculty_" + (i+1);
+            profs[i] = new Faculty(bowl, ta, maxSleepTime, name);
         }
 
         for (int i = 0; i < nProf; i++) {
@@ -375,4 +404,10 @@ public class CandyBowlProblem extends JPanel {
             }
         }
     }
+
+    public static void main(String[] args) {
+        playGUI(); // play game in GUI
+        // playCLI(); // play game in CLIE
+    }
+
 }
