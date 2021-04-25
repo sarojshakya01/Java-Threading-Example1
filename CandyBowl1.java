@@ -1,10 +1,4 @@
 /*
-@author Josh Braden
-This program is a peek into facutly life in the SHSU CS department.
-Simulates a *realistic* candy bowl with *lifelike* faculty members.
-The bowl can only be accessed by one member at a time, exemplifying usage syncronized methods in Java.
-The program supports N bowls, professors, and TA's, but only one list of each is allowed.
-So no support for access control lists.
 CLASS LIST
 ==============================================
 Bowl
